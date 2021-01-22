@@ -8,9 +8,11 @@ include_directories("inc")
 set(SRCBASE "src")
 set(BINDIR  "./build/bin/${CMAKE_SYSTEM_NAME}")
 
-add_executable(theplanets
+add_executable(mvneural
            ${SRCBASE}/main.cpp
            ${SRCBASE}/NNeural.cpp
+           ${SRCBASE}/NStringTool.cpp
+           ${SRCBASE}/CTextFileParser.cpp
 )
 
 
