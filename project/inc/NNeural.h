@@ -30,8 +30,9 @@ namespace NNeural
 	{
         public:
 
-            float  mValue;
+            float  mValue;            
             float* mWeight;
+            
 	  
 	};  
 
@@ -46,6 +47,7 @@ namespace NNeural
         public:
 
             CKnot* mKnot;
+            float  mBias;
     };  
 
     //---------------------------------------------------------------------------
@@ -61,11 +63,14 @@ namespace NNeural
             void InitLayers(int LayoutCount, int KnotCount);
             void Learn(const float* input);
             void InitWeights(const float* Weights);
-      
+            void InitTargets(const float* Targets);
+            float CalcTotalError() const;
+            void Backpropagate();
  
         protected:
 
             CLayer* mLayer;
+            const float*  mTargets;
             int     mLayerCount;
             int     mKnotCount;
     

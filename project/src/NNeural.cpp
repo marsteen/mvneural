@@ -56,6 +56,11 @@ namespace NNeural
     {
         return 1.0f / (1.0f + exp(-x));
     }
+    
+    static inline float square(float x)
+    {
+        return x * x;        
+    }
 
     //---------------------------------------------------------------------------
     //
@@ -75,20 +80,18 @@ namespace NNeural
         // Berechnen
         for (int l = 0; l < mLayerCount-1; l++)
         {
-
             for (int k = 0; k < mKnotCount; k++)
             {
                 float sum = 0.0f;  
                 for (int w = 0; w < mKnotCount; w++)
                 {        
-                float vr = mLayer[l].mKnot[w].mValue;
-                float wr = mLayer[l].mKnot[w].mWeight[k];
-
-                cout << "vr=" << vr << " wr=" << wr << endl;
-
-                sum += vr * wr;
+                    float vr = mLayer[l].mKnot[w].mValue;
+                    float wr = mLayer[l].mKnot[w].mWeight[k];
+                    cout << "vr=" << vr << " wr=" << wr << endl;
+                    sum += vr * wr;
                 }
-                mLayer[l+1].mKnot[k].mValue = sigmoid(sum);
+                cout << "sum=" << sum << " bias=" <<  + mLayer[l+1].mBias <<  endl;
+                mLayer[l+1].mKnot[k].mValue = sigmoid(sum + mLayer[l+1].mBias);
                 //mLayer[l+1].mKnot[k].mValue = sum;
             }
         }
@@ -97,11 +100,72 @@ namespace NNeural
 
         for (int k = 0; k < mKnotCount; k++)
         {
-            cout <<  mLayer[mLayerCount-1].mKnot[k].mValue << endl;
+            cout <<  "output " << k << ": " << mLayer[mLayerCount-1].mKnot[k].mValue << endl;
         }
 
     }
 
+    //---------------------------------------------------------------------------
+    //
+    // Klasse:    CNet
+    // Methode:   CalcTotalError
+    //
+    //---------------------------------------------------------------------------
+
+    float CNet::CalcTotalError() const
+    {
+        float totalError = 0.0f;
+        for (int k = 0; k < mKnotCount; k++)
+        {
+            totalError += 0.5f * square(mTargets[k] - mLayer[mLayerCount-1].mKnot[k].mValue);
+        }
+        cout << "totalError=" << totalError << endl;
+        
+        return totalError;
+    }    
+
+    //---------------------------------------------------------------------------
+    //
+    // Klasse:    CNet
+    // Methode:   Backpropagate
+    //
+    //---------------------------------------------------------------------------
+
+    void CNet::Backpropagate()
+    {
+        int n = 0;
+        float totalError = CalcTotalError();
+        for (int l = 0; l < mLayerCount-1; l++)
+        {
+            for (int k = 0; k < mKnotCount; k++)
+            {
+                float sum = 0.0f;
+                for (int w = 0; w < mKnotCount; w++)
+                {                            
+                    float wr = mLayer[l].mKnot[w].mWeight[k];
+                    float wr_updated = wr - 0.5f * (totalError / wr);
+                    mLayer[l].mKnot[w].mWeight[k] = wr_updated;
+                    
+                    cout << "w=" << n++ << " old=" << wr << " new=" << wr_updated << endl;
+                    
+                }
+            }
+        }        
+    }
+    
+    
+    //---------------------------------------------------------------------------
+    //
+    // Klasse:    CNet
+    // Methode:   InitTargets
+    //
+    //---------------------------------------------------------------------------
+
+    void CNet::InitTargets(const float* targets)
+    {
+        mTargets = targets;
+    }
+    
     //---------------------------------------------------------------------------
     //
     // Klasse:    CNet
@@ -112,15 +176,21 @@ namespace NNeural
     void CNet::InitWeights(const float* weights)
     {
         int w = 0;
-        for (int k = 0; k < mKnotCount; k++)
-        {
-            for (int i = 0; i < mKnotCount; i++)
-            {        
-                mLayer[0].mKnot[k].mWeight[i] = weights[w++];
+        
+        for (int L = 0; L < mLayerCount-1; L++)
+        {        
+            mLayer[L+1].mBias = weights[w++];
+            for (int k = 0; k < mKnotCount; k++)
+            {
+                for (int i = 0; i < mKnotCount; i++)
+                {        
+                    mLayer[L].mKnot[k].mWeight[i] = weights[w++];
+                }
             }
         }
     }
-  
+
+
 } // end of namespace
 
 
