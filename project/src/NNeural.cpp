@@ -33,6 +33,7 @@ namespace NNeural
         mKnotCount  = KnotCount;
         mLayerCount = LayerCount;
         mLayer = new CLayer[LayerCount];
+        mErrors = new int[KnotCount];
         for (int l = 0; l < LayerCount; l++)
         {
             mLayer[l].mKnot = new CKnot[KnotCount];
@@ -40,6 +41,7 @@ namespace NNeural
             for (int k = 0; k < KnotCount; k++)
             {
                 mLayer[l].mKnot[k].mWeight = new float[KnotCount];
+                mLayer[l].mKnot[k].mWeightNew = new float[KnotCount];
             }      
         }
     }
@@ -92,6 +94,7 @@ namespace NNeural
                 }
                 cout << "sum=" << sum << " bias=" <<  + mLayer[l+1].mBias <<  endl;
                 mLayer[l+1].mKnot[k].mValue = sigmoid(sum + mLayer[l+1].mBias);
+                mLayer[l+1].mKnot[k].mOut   = sigmoid(sum);
                 //mLayer[l+1].mKnot[k].mValue = sum;
             }
         }
@@ -117,13 +120,15 @@ namespace NNeural
         float totalError = 0.0f;
         for (int k = 0; k < mKnotCount; k++)
         {
-            totalError += 0.5f * square(mTargets[k] - mLayer[mLayerCount-1].mKnot[k].mValue);
+            mErrors[k] = mTargets[k] - mLayer[mLayerCount-1].mKnot[k].mValue;
+            totalError += 0.5f * square(mErrors[k]);
         }
         cout << "totalError=" << totalError << endl;
         
         return totalError;
     }    
 
+    
     //---------------------------------------------------------------------------
     //
     // Klasse:    CNet
@@ -135,19 +140,48 @@ namespace NNeural
     {
         int n = 0;
         float totalError = CalcTotalError();
-        for (int l = 0; l < mLayerCount-1; l++)
+        //for (int l = 0; l < mLayerCount-1; l++)
+        for (int l = mLayerCount-2; l >= 0; l--)
         {
             for (int k = 0; k < mKnotCount; k++)
             {
-                float sum = 0.0f;
                 for (int w = 0; w < mKnotCount; w++)
-                {                            
-                    float wr = mLayer[l].mKnot[w].mWeight[k];
-                    float wr_updated = wr - 0.5f * (totalError / wr);
-                    mLayer[l].mKnot[w].mWeight[k] = wr_updated;
+                {              
+
+                    float target_o1 = mTargets[k];
                     
-                    cout << "w=" << n++ << " old=" << wr << " new=" << wr_updated << endl;
-                    
+                    if (l ==  mLayerCount-2)
+                    {     
+                        target_o1 = mTargets[k];
+                        float wr = mLayer[l].mKnot[w].mWeight[k];
+                        float out_o1    = mLayer[mLayerCount-1].mKnot[k].mValue;
+                        float out_h1    = mLayer[l].mKnot[w].mValue;
+                        float delta = -(target_o1 - out_o1) * out_o1 * (1.0f - out_o1) * out_h1;
+                        float p2 = out_h1 * (1.0f - out_h1);
+                        float wr_updated = wr - 0.5f * delta;
+                        mLayer[l].mKnot[w].mWeight[k] = wr_updated;
+                        
+                        cout << "l=" << l << " w=" << n++ << " old=" << wr << " new=" << wr_updated 
+                             << " p2=" << p2 << " layercount=" << mLayerCount << endl;
+                    }
+                    else
+                    {
+                        
+                        
+                        float wr = mLayer[l].mKnot[w].mWeight[k];
+                        target_o1 = wr;
+                        
+                        float out_o1    = mLayer[l+1].mKnot[k].mValue;
+                        float out_h1    = mLayer[l].mKnot[w].mValue;
+                        float delta = -(target_o1 - out_o1) * out_o1 * (1.0f - out_o1) * out_h1;
+                        float p2 = out_h1 * (1.0f - out_h1);
+                        float wr_updated = wr - 0.5f * delta;
+                        mLayer[l].mKnot[w].mWeightNew[k] = wr_updated;
+                        
+                        cout << "l=" << l << " w=" << n++ << " old=" << wr << " new=" << wr_updated 
+                             << " p2=" << p2 << endl;
+                        
+                    }
                 }
             }
         }        
@@ -184,7 +218,8 @@ namespace NNeural
             {
                 for (int i = 0; i < mKnotCount; i++)
                 {        
-                    mLayer[L].mKnot[k].mWeight[i] = weights[w++];
+                    mLayer[L].mKnot[k].mWeightNew[i] = mLayer[L].mKnot[k].mWeight[i] = weights[w++];
+                    
                 }
             }
         }

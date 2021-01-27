@@ -30,8 +30,10 @@ namespace NNeural
 	{
         public:
 
-            float  mValue;            
+            float  mValue;
+            float  mOut;
             float* mWeight;
+            float* mWeightNew;
             
 	  
 	};  
@@ -70,7 +72,8 @@ namespace NNeural
         protected:
 
             CLayer* mLayer;
-            const float*  mTargets;
+            const float* mTargets;
+            int*    mErrors;
             int     mLayerCount;
             int     mKnotCount;
     
